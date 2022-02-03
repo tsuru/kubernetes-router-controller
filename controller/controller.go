@@ -120,20 +120,21 @@ func (r *Pod200Reconciler) checkPod(ctx context.Context, pod *v1.Pod) error {
 	}
 	path := "/"
 	probeTimeout := 30 * time.Second
+	scheme := "http"
+
 	if probe != nil {
 		probeTimeout = time.Duration(probe.TimeoutSeconds) * time.Second
 		if probe.HTTPGet != nil {
 			path = probe.HTTPGet.Path
+
+			if probe.HTTPGet.Scheme == v1.URISchemeHTTPS {
+				scheme = "https"
+			}
 		}
 	}
 	client := http.Client{
 		Transport: defaultTransport,
 		Timeout:   probeTimeout,
-	}
-	// probe.HTTPGet.Scheme, TODO support https
-	scheme := "http"
-	if probe.HTTPGet != nil && probe.HTTPGet.Scheme == v1.URISchemeHTTPS {
-		scheme = "https"
 	}
 
 	response, err := client.Get(scheme + "://" + pod.Status.PodIP + ":" + strconv.Itoa(containerPort) + path)
